@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Page Auto Poster Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Axios -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!-- Font Kantumruy Pro -->
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kantumruy Pro', sans-serif;
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-8">
+
+    <div id="app" v-cloak class="max-w-5xl mx-auto">
+
+        <!-- HEADER រួម -->
+        <header
+            class="bg-slate-900 rounded-2xl p-5 text-white mb-6 shadow flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <span>📁 Auto-Post Multi-Folder Manager</span>
+                </h1>
+                <p class="text-slate-400 text-xs mt-1">បំបែក Folder តាម Platform/Page នីមួយៗដាច់ដោយឡែក ការពារកុំឱ្យ
+                    Upload វីដេអូជាន់គ្នា</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button v-if="currentLevel > 1" @click="goBack"
+                    class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700 flex items-center gap-2 transition">
+                    ⬅️ ថយក្រោយ
+                </button>
+                <button @click="showSync = true"
+                    class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition">
+                    + Sync FB Pages
+                </button>
+            </div>
+        </header>
+
+        <!-- BREADCRUMBS NAVIGATION (ផ្លូវរុករក) -->
+        <nav
+            class="flex items-center gap-2 text-xs font-medium text-slate-500 mb-6 bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
+            <button @click="resetToHome" class="hover:text-indigo-600 font-bold">🏠 ផ្ទាំងដើម (Platforms)</button>
+            <span v-if="selectedPlatform">/</span>
+            <button v-if="selectedPlatform" @click="currentAccount = null"
+                :class="!currentAccount ? 'text-indigo-600 font-bold' : 'hover:text-indigo-600'">
+                {{ getPlatformTitle(selectedPlatform) }}
+            </button>
+            <span v-if="currentAccount">/</span>
+            <span v-if="currentAccount" class="text-slate-800 font-bold">{{ currentAccount.name }}</span>
+        </nav>
+
+
+        <!-- ==================== កម្រិតទី ១: PLATFORM HUB ==================== -->
+        <div v-if="currentLevel === 1" class="space-y-4">
+            <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider">សូមជ្រើសរើស Platform ដែលត្រូវគ្រប់គ្រង
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+
+                <!-- Facebook -->
+                <div @click="selectPlatform('facebook')"
+                    class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 cursor-pointer transition flex flex-col justify-between group">
+                    <div class="flex items-start justify-between">
+                        <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center p-2.5">
+                            <svg class="w-full h-full text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                            </svg>
+                        </div>
+                        <span class="text-xs font-bold px-3 py-1 rounded-full bg-blue-100 text-blue-700">Facebook</span>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-base font-bold text-slate-800 group-hover:text-blue-600 transition">Facebook
+                            Pages Manager</h3>
+                        <p class="text-xs text-slate-500 mt-1">គ្រប់គ្រង Pages ទាំងអស់របស់ Facebook Admin</p>
+                    </div>
+                    <div class="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-400">ចំនួន Pages:</span>
+                        <span class="font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">{{
+                            getAccountCount('facebook') }} Pages</span>
+                    </div>
+                </div>
+
+                <!-- YouTube -->
+                <div @click="selectPlatform('youtube')"
+                    class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-red-500 cursor-pointer transition flex flex-col justify-between group">
+                    <div class="flex items-start justify-between">
+                        <div class="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center p-2.5">
+                            <svg class="w-full h-full text-[#FF0000]" fill="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                            </svg>
+                        </div>
+                        <span class="text-xs font-bold px-3 py-1 rounded-full bg-red-100 text-red-700">YouTube</span>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-base font-bold text-slate-800 group-hover:text-red-600 transition">YouTube
+                            Channels</h3>
+                        <p class="text-xs text-slate-500 mt-1">គ្រប់គ្រង Channels សម្រាប់ផុស Shorts/Videos</p>
+                    </div>
+                    <div class="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-400">ចំនួន Channels:</span>
+                        <span class="font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-lg">{{
+                            getAccountCount('youtube') }} Channels</span>
+                    </div>
+                </div>
+
+                <!-- TikTok -->
+                <div @click="selectPlatform('tiktok')"
+                    class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-900 cursor-pointer transition flex flex-col justify-between group">
+                    <div class="flex items-start justify-between">
+                        <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center p-2.5">
+                            <svg class="w-full h-full text-black" fill="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
+                            </svg>
+                        </div>
+                        <span class="text-xs font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-800">TikTok</span>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-base font-bold text-slate-800 group-hover:text-slate-900 transition">TikTok
+                            Accounts</h3>
+                        <p class="text-xs text-slate-500 mt-1">គ្រប់គ្រង TikTok Profiles និងកាលវិភាគ</p>
+                    </div>
+                    <div class="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-400">ចំនួន Accounts:</span>
+                        <span class="font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg">{{
+                            getAccountCount('tiktok') }} Accounts</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- ==================== កម្រិតទី ២: បញ្ជី FOLDERS + ប៊ូតុង ADD ថែម ==================== -->
+        <div v-else-if="currentLevel === 2" class="space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">បញ្ជី Folder ទាំងអស់ក្នុង {{
+                        getPlatformTitle(selectedPlatform) }}</h2>
+                    <p class="text-xs text-slate-500">ចុចលើ Folder ដើម្បីចូលទៅ Upload ឬចុចបង្កើត Folder ថ្មីបន្ថែម</p>
+                </div>
+
+                <div class="w-full sm:w-64">
+                    <input type="text" v-model="searchQuery" placeholder="ស្វែងរកឈ្មោះ Page..."
+                        class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+
+                <div v-for="acc in filteredAccounts" :key="acc.id" @click="selectAccount(acc)"
+                    class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-400 cursor-pointer transition flex flex-col justify-between group">
+
+                    <div class="flex items-start justify-between">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-slate-100">📁</div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">ID: {{
+                            acc.id }}</span>
+                    </div>
+
+                    <div class="mt-4">
+                        <h3
+                            class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition line-clamp-1">
+                            {{ acc.name }}</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Folder: /uploads/{{ acc.id }}</p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-500">វីដេអូក្នុង Folder:</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-600">
+                            {{ (workspaces[acc.id]?.videos || []).length }} វីដេអូ
+                        </span>
+                    </div>
+                </div>
+
+                <div @click="openAddModal = true"
+                    class="border-2 border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50/20 hover:bg-indigo-50/50 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition group min-h-[170px]">
+                    <div
+                        class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl font-bold group-hover:scale-110 transition shadow-sm mb-2">
+                        +
+                    </div>
+                    <h4 class="text-sm font-bold text-indigo-700">បន្ថែម Folder ថ្មី</h4>
+                    <p class="text-[11px] text-slate-500 mt-0.5">បង្កើត Folder សម្រាប់ Page/Channel ថ្មី</p>
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- ==================== កម្រិតទី ៣: UPLOAD WORKSPACE ==================== -->
+        <div v-else-if="currentLevel === 3" class="space-y-6">
+
+            <!-- បដាបង្ហាញឈ្មោះ Page -->
+            <div class="bg-white rounded-2xl p-4 border-l-4 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3"
+                :class="currentAccount.platform === 'facebook' ? 'border-l-blue-600' : (currentAccount.platform === 'youtube' ? 'border-l-red-600' : 'border-l-slate-900')">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📂</span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-bold uppercase px-2 py-0.5 rounded text-white"
+                                :class="currentAccount.platform === 'facebook' ? 'bg-blue-600' : (currentAccount.platform === 'youtube' ? 'bg-red-600' : 'bg-slate-900')">
+                                {{ currentAccount.platform }}
+                            </span>
+                            <h2 class="text-base font-bold text-slate-800">{{ currentAccount.name }}</h2>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">វីដេអូដែល Upload នៅទីនេះ គឺសម្រាប់ផុសតែលើ Folder
+                            មួយនេះប៉ុណ្ណោះ</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-500">ប្ដូរទៅ Folder ផ្សេង:</span>
+                    <select :value="currentAccount.id" @change="switchAccount($event.target.value)"
+                        class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option v-for="acc in currentPlatformAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Form គ្រប់គ្រងវីដេអូ -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- ជួរឆ្វេង: Thumbnail & កាលវិភាគបត់បែនតាមចិត្ត -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">🖼️ រូបភាពក្រប
+                            (Thumbnail)</h3>
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-20 h-28 bg-slate-100 rounded-xl border border-slate-300 relative flex items-center justify-center overflow-hidden shrink-0">
+                                <img v-if="currentWorkspace.thumbnailPreview" :src="currentWorkspace.thumbnailPreview"
+                                    class="w-full h-full object-cover">
+                                <span v-else class="text-[10px] text-slate-400 text-center px-1">គ្មានរូប</span>
+                                <button v-if="currentWorkspace.thumbnailPreview" @click="removeCurrentThumbnail"
+                                    class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-[9px] leading-none">✕</button>
+                            </div>
+                            <div class="text-xs space-y-2">
+                                <p class="text-slate-500">Thumbnail សម្រាប់ Folder នេះ</p>
+                                <label
+                                    class="inline-block bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition border border-slate-300">
+                                    រើសរូបភាព
+                                    <input type="file" accept="image/*" class="hidden" @change="onThumbnailSelected">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🌟 កាលវិភាគផុស (រើសចំនួនវីដេអូ ព្រឹក ថ្ងៃ យប់ តាមចិត្ត) -->
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">⏱️ កាលវិភាគផុស</h3>
+                            <span class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                                សរុប: {{ totalVideosPerDay }} វីដេអូ/ថ្ងៃ
+                            </span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ថ្ងៃចាប់ផ្ដើមផុស</label>
+                            <input type="date" v-model="currentWorkspace.schedule.startDate"
+                                class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+
+                        <!-- ១. ផ្នែកពេលព្រឹក (រើសចំនួនវីដេអូបានតាមចិត្ត) -->
+                        <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-200/60 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-amber-800 flex items-center gap-1">🌅
+                                    ពេលព្រឹក:</span>
+                                <div class="flex items-center gap-1 text-[11px]">
+                                    <span class="text-slate-500">ចង់ផុស:</span>
+                                    <select :value="currentWorkspace.schedule.morningTimes.length"
+                                        @change="updateSlotCount('morningTimes', $event.target.value, '07:30')"
+                                        class="bg-white border border-amber-300 rounded-lg px-2 py-0.5 font-bold text-amber-800 focus:outline-none">
+                                        <option :value="0">មិនផុស</option>
+                                        <option :value="1">1 វីដេអូ</option>
+                                        <option :value="2">2 វីដេអូ</option>
+                                        <option :value="3">3 វីដេអូ</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- ប្រអប់ម៉ោងពេលព្រឹក បង្ហាញតាមចំនួនវីដេអូដែលរើស -->
+                            <div class="space-y-1.5 pt-1">
+                                <div v-for="(time, idx) in currentWorkspace.schedule.morningTimes" :key="idx"
+                                    class="flex items-center gap-2">
+                                    <span class="text-[10px] text-amber-700 font-semibold w-16">វីដេអូទី {{ idx + 1
+                                        }}:</span>
+                                    <input type="time" v-model="currentWorkspace.schedule.morningTimes[idx]"
+                                        class="flex-1 bg-white border border-amber-200 rounded-lg p-1 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ២. ផ្នែកពេលថ្ងៃត្រង់ (រើសចំនួនវីដេអូបានតាមចិត្ត) -->
+                        <div class="p-3 bg-orange-50/50 rounded-xl border border-orange-200/60 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-orange-800 flex items-center gap-1">☀️
+                                    ពេលថ្ងៃត្រង់:</span>
+                                <div class="flex items-center gap-1 text-[11px]">
+                                    <span class="text-slate-500">ចង់ផុស:</span>
+                                    <select :value="currentWorkspace.schedule.noonTimes.length"
+                                        @change="updateSlotCount('noonTimes', $event.target.value, '11:30')"
+                                        class="bg-white border border-orange-300 rounded-lg px-2 py-0.5 font-bold text-orange-800 focus:outline-none">
+                                        <option :value="0">មិនផុស</option>
+                                        <option :value="1">1 វីដេអូ</option>
+                                        <option :value="2">2 វីដេអូ</option>
+                                        <option :value="3">3 វីដេអូ</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- ប្រអប់ម៉ោងពេលថ្ងៃត្រង់ -->
+                            <div v-if="currentWorkspace.schedule.noonTimes.length > 0" class="space-y-1.5 pt-1">
+                                <div v-for="(time, idx) in currentWorkspace.schedule.noonTimes" :key="idx"
+                                    class="flex items-center gap-2">
+                                    <span class="text-[10px] text-orange-700 font-semibold w-16">វីដេអូទី {{ idx + 1
+                                        }}:</span>
+                                    <input type="time" v-model="currentWorkspace.schedule.noonTimes[idx]"
+                                        class="flex-1 bg-white border border-orange-200 rounded-lg p-1 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ៣. ផ្នែកពេលយប់ (រើសចំនួនវីដេអូបានតាមចិត្ត) -->
+                        <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-200/60 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-indigo-800 flex items-center gap-1">🌙
+                                    ពេលយប់:</span>
+                                <div class="flex items-center gap-1 text-[11px]">
+                                    <span class="text-slate-500">ចង់ផុស:</span>
+                                    <select :value="currentWorkspace.schedule.nightTimes.length"
+                                        @change="updateSlotCount('nightTimes', $event.target.value, '19:30')"
+                                        class="bg-white border border-indigo-300 rounded-lg px-2 py-0.5 font-bold text-indigo-800 focus:outline-none">
+                                        <option :value="0">មិនផុស</option>
+                                        <option :value="1">1 វីដេអូ</option>
+                                        <option :value="2">2 វីដេអូ</option>
+                                        <option :value="3">3 វីដេអូ</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- ប្រអប់ម៉ោងពេលយប់ -->
+                            <div v-if="currentWorkspace.schedule.nightTimes.length > 0" class="space-y-1.5 pt-1">
+                                <div v-for="(time, idx) in currentWorkspace.schedule.nightTimes" :key="idx"
+                                    class="flex items-center gap-2">
+                                    <span class="text-[10px] text-indigo-700 font-semibold w-16">វីដេអូទី {{ idx + 1
+                                        }}:</span>
+                                    <input type="time" v-model="currentWorkspace.schedule.nightTimes[idx]"
+                                        class="flex-1 bg-white border border-indigo-200 rounded-lg p-1 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Auto Delete -->
+                        <div class="pt-2 border-t border-slate-100">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" v-model="currentWorkspace.schedule.autoDelete"
+                                    class="w-4 h-4 text-indigo-600 rounded mt-0.5">
+                                <span class="text-xs text-slate-600 font-medium">
+                                    <strong class="text-red-600">Auto-Delete:</strong> លុប file ភ្លាមៗពេលផុសចប់
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ជួរស្តាំ: Dropzone & List -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div
+                        class="bg-white rounded-2xl p-6 border-2 border-dashed border-indigo-300 bg-indigo-50/20 hover:bg-indigo-50/40 transition text-center relative cursor-pointer">
+                        <input type="file" multiple accept="video/mp4,video/*"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            @change="onVideoFilesSelected">
+                        <div class="flex flex-col items-center justify-center pointer-events-none py-2">
+                            <div
+                                class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-2">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                    </path>
+                                </svg>
+                            </div>
+                            <p class="text-sm font-bold text-slate-800">ទាញទម្លាក់ ឬជ្រើសរើសវីដេអូសម្រាប់ Folder "{{
+                                currentAccount.name }}"</p>
+                            <p class="text-xs text-slate-500 mt-0.5">អាចជ្រើសរើសបានរាប់រយវីដេអូ (.mp4)</p>
+                        </div>
+                    </div>
+
+                    <div v-if="currentWorkspace.videos.length > 0"
+                        class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                        <div
+                            class="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-700">
+                            <span>វីដេអូក្នុង Folder នេះ ({{ currentWorkspace.videos.length }})</span>
+                            <button @click="clearCurrentVideos" class="text-red-600 hover:underline">លុបទាំងអស់</button>
+                        </div>
+
+                        <div class="max-h-56 overflow-y-auto divide-y divide-slate-100 text-xs">
+                            <div v-for="(v, idx) in currentWorkspace.videos" :key="idx"
+                                class="p-3 flex items-center justify-between gap-3 hover:bg-slate-50">
+                                <div class="flex items-center gap-2 truncate flex-1">
+                                    <span class="font-bold text-slate-400">#{{ idx + 1 }}</span>
+                                    <p class="font-semibold text-slate-700 truncate">{{ v.name }}</p>
+                                </div>
+                                <span class="text-slate-400 text-[10px]">{{ (v.size / (1024*1024)).toFixed(1) }}
+                                    MB</span>
+                                <button @click="removeCurrentVideo(idx)"
+                                    class="text-slate-400 hover:text-red-500 font-bold px-1">✕</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">📝 Caption / ចំណងជើង
+                            (Template)</h3>
+                        <textarea rows="3" v-model="currentWorkspace.captionTemplate"
+                            class="w-full border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                        <p class="text-[11px] text-slate-400">* ប្រព័ន្ធនឹងយកឈ្មោះ File ជំនួសត្រង់ពាក្យ {title}
+                            ដោយស្វ័យប្រវត្តិ។</p>
+                    </div>
+
+                    <button @click="saveAndStartQueue" :disabled="isUploading"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition flex items-center justify-center gap-2">
+                        <span v-if="isUploading">កំពុងបញ្ចូលវីដេអូទៅ Server...</span>
+                        <span v-else>🚀 រក្សាទុក និងបញ្ជូនវីដេអូចូល Folder នេះ</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== POPUP MODALS ==================== -->
+        <div v-if="openAddModal"
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📁</span>
+                    <h3 class="text-base font-bold text-slate-800">បន្ថែម {{ getPlatformTitle(selectedPlatform) }} ថ្មី
+                    </h3>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">ឈ្មោះ Page / Channel</label>
+                        <input type="text" v-model="newAccount.name" placeholder="ឧ. សម្រាយរឿងភាគចិន 04"
+                            class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Page ID ឬ Custom Folder Name</label>
+                        <input type="text" v-model="newAccount.id" placeholder="ឧ. 6155... ឬ fb_04"
+                            class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button @click="openAddModal = false"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-semibold text-slate-600">បោះបង់</button>
+                    <button @click="addNewAccount"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-xs font-semibold text-white">+
+                        បង្កើត Folder</button>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showSync"
+            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+                <h3 class="text-base font-bold text-slate-800">ភ្ជាប់ Facebook Admin Access Token</h3>
+                <p class="text-xs text-slate-500">បញ្ចូល Access Token របស់ Admin វានឹងទាញយក Facebook Pages
+                    ទាំងអស់មកបង្កើតជា Folder ដាច់ដោយឡែកដោយស្វ័យប្រវត្តិ។</p>
+                <textarea v-model="fbAdminToken" rows="4" placeholder="បិទភ្ជាប់ User Access Token នៅទីនេះ..."
+                    class="w-full border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+
+                <div class="flex justify-end gap-3">
+                    <button @click="showSync = false"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-semibold text-slate-700">បោះបង់</button>
+                    <button @click="syncPages"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-xs font-semibold text-white">ទាញយក
+                        Pages ឥឡូវនេះ</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const showSync = ref(false);
+                const openAddModal = ref(false);
+                const fbAdminToken = ref('');
+                const isUploading = ref(false);
+                const searchQuery = ref('');
+                const newAccount = ref({ name: '', id: '' });
+
+                const selectedPlatform = ref(null);
+                const currentAccount = ref(null);
+
+                const currentLevel = computed(() => {
+                    if (!selectedPlatform.value) return 1;
+                    if (!currentAccount.value) return 2;
+                    return 3;
+                });
+
+                const accounts = ref([
+                    { id: '61554109830366', platform: 'facebook', name: 'Mrr. Boren' },
+                    { id: '61580479197489', platform: 'facebook', name: 'NCBR-Video' },
+                    { id: 'yt_01', platform: 'youtube', name: 'YouTube Shorts Channel' },
+                    { id: 'tt_01', platform: 'tiktok', name: 'TikTok Account' }
+                ]);
+
+                const workspaces = ref({});
+
+                // បង្កើត Workspace ដោយបំបែកម៉ោងជា Array តាមចំនួនវីដេអូនីមួយៗ
+                const initWorkspaces = () => {
+                    accounts.value.forEach(acc => {
+                        if (!workspaces.value[acc.id]) {
+                            workspaces.value[acc.id] = {
+                                videos: [],
+                                thumbnailFile: null,
+                                thumbnailPreview: null,
+                                schedule: {
+                                    startDate: '2026-10-03',
+                                    morningTimes: ['07:30'],      // Default ពេលព្រឹក ១ វីដេអូ
+                                    noonTimes: ['11:30'],         // Default ពេលថ្ងៃត្រង់ ១ វីដេអូ
+                                    nightTimes: ['19:30'],        // Default ពេលយប់ ១ វីដេអូ
+                                    autoDelete: true
+                                },
+                                captionTemplate: `{title} #សម្រាយរឿង #សម្រាយរឿងចិន #រឿងភាគខ្លី #fyp #viral\n\nសូមជួយ Follow ដើម្បីទស្សនាភាគបន្ត! #${acc.platform}`
+                            };
+                        }
+                    });
+                };
+                initWorkspaces();
+
+                // មុខងារកែប្រែចំនួនវីដេអូដែលត្រូវផុស (ព្រឹក/ថ្ងៃ/យប់)
+                const updateSlotCount = (slotKey, count, defaultTime) => {
+                    const num = parseInt(count);
+                    const currentArr = currentWorkspace.value.schedule[slotKey];
+                    if (num > currentArr.length) {
+                        while (currentArr.length < num) {
+                            currentArr.push(defaultTime);
+                        }
+                    } else {
+                        currentWorkspace.value.schedule[slotKey] = currentArr.slice(0, num);
+                    }
+                };
+
+                // គណនាចំនួនសរុបវីដេអូក្នុងមួយថ្ងៃ
+                const totalVideosPerDay = computed(() => {
+                    if (!currentWorkspace.value) return 0;
+                    const s = currentWorkspace.value.schedule;
+                    return s.morningTimes.length + s.noonTimes.length + s.nightTimes.length;
+                });
+
+                const currentPlatformAccounts = computed(() => {
+                    if (!selectedPlatform.value) return [];
+                    return accounts.value.filter(a => a.platform === selectedPlatform.value);
+                });
+
+                const filteredAccounts = computed(() => {
+                    return currentPlatformAccounts.value.filter(a =>
+                        a.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+                    );
+                });
+
+                const currentWorkspace = computed(() => {
+                    if (!currentAccount.value) return null;
+                    return workspaces.value[currentAccount.value.id];
+                });
+
+                const getAccountCount = (platform) => {
+                    return accounts.value.filter(a => a.platform === platform).length;
+                };
+
+                const getPlatformTitle = (platform) => {
+                    if (platform === 'facebook') return 'Facebook Pages';
+                    if (platform === 'youtube') return 'YouTube Channels';
+                    if (platform === 'tiktok') return 'TikTok Accounts';
+                    return '';
+                };
+
+                const selectPlatform = (platform) => {
+                    selectedPlatform.value = platform;
+                    currentAccount.value = null;
+                    searchQuery.value = '';
+                };
+
+                const selectAccount = (acc) => {
+                    currentAccount.value = acc;
+                };
+
+                const switchAccount = (accId) => {
+                    const target = accounts.value.find(a => a.id === accId);
+                    if (target) currentAccount.value = target;
+                };
+
+                const goBack = () => {
+                    if (currentLevel.value === 3) {
+                        currentAccount.value = null;
+                    } else if (currentLevel.value === 2) {
+                        selectedPlatform.value = null;
+                    }
+                };
+
+                const resetToHome = () => {
+                    selectedPlatform.value = null;
+                    currentAccount.value = null;
+                };
+
+                const addNewAccount = () => {
+                    if (!newAccount.value.name.trim()) {
+                        alert('សូមបញ្ចូលឈ្មោះ Folder / Page!');
+                        return;
+                    }
+
+                    const accId = newAccount.value.id.trim() || `${selectedPlatform.value}_${Date.now().toString().slice(-4)}`;
+
+                    accounts.value.push({
+                        id: accId,
+                        platform: selectedPlatform.value,
+                        name: newAccount.value.name.trim()
+                    });
+
+                    workspaces.value[accId] = {
+                        videos: [],
+                        thumbnailFile: null,
+                        thumbnailPreview: null,
+                        schedule: {
+                            startDate: '2026-10-03',
+                            morningTimes: ['07:30'],
+                            noonTimes: ['11:30'],
+                            nightTimes: ['19:30'],
+                            autoDelete: true
+                        },
+                        captionTemplate: `{title}\n\nសូមជួយ Follow ដើម្បីទស្សនាភាគបន្ត! #${selectedPlatform.value}`
+                    };
+
+                    alert(`បានបង្កើត Folder "${newAccount.value.name}" ជោគជ័យ!`);
+                    newAccount.value = { name: '', id: '' };
+                    openAddModal.value = false;
+                };
+
+                const onVideoFilesSelected = (e) => {
+                    const files = Array.from(e.target.files);
+                    files.forEach(f => {
+                        currentWorkspace.value.videos.push(f);
+                    });
+                };
+
+                const removeCurrentVideo = (idx) => {
+                    currentWorkspace.value.videos.splice(idx, 1);
+                };
+
+                const clearCurrentVideos = () => {
+                    currentWorkspace.value.videos = [];
+                };
+
+                const onThumbnailSelected = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        currentWorkspace.value.thumbnailFile = file;
+                        currentWorkspace.value.thumbnailPreview = URL.createObjectURL(file);
+                    }
+                };
+
+                const removeCurrentThumbnail = () => {
+                    currentWorkspace.value.thumbnailFile = null;
+                    currentWorkspace.value.thumbnailPreview = null;
+                };
+
+                const syncPages = async () => {
+                    if (!fbAdminToken.value.trim()) {
+                        alert('សូមបញ្ចូល Facebook Token!');
+                        return;
+                    }
+                    try {
+                        const formData = new FormData();
+                        formData.append('user_access_token', fbAdminToken.value.trim());
+
+                        const response = await axios.post('http://127.0.0.1:8000/api/sync-facebook-pages', formData);
+
+                        if (response.data.status === 'success') {
+                            const fbPages = response.data.data;
+                            accounts.value = accounts.value.filter(a => a.platform !== 'facebook');
+
+                            fbPages.forEach(p => {
+                                accounts.value.push({
+                                    id: p.id,
+                                    platform: 'facebook',
+                                    name: p.name
+                                });
+                            });
+
+                            initWorkspaces();
+                            alert(`Sync ជោគជ័យ! បានបញ្ចូល ${fbPages.length} Facebook Pages។`);
+                            showSync.value = false;
+                        } else {
+                            alert('កំហុស៖ ' + response.data.message);
+                        }
+                    } catch (err) {
+                        alert('មិនអាចទាក់ទងទៅ Server បានទេ សូមប្រាកដថាបាន run server.py!');
+                    }
+                };
+
+                const saveAndStartQueue = async () => {
+                    if (currentWorkspace.value.videos.length === 0) {
+                        alert('សូមជ្រើសរើសវីដេអូយ៉ាងហោចណាស់មួយ!');
+                        return;
+                    }
+
+                    isUploading.value = true;
+                    const formData = new FormData();
+                    formData.append('page_id', currentAccount.value.id);
+                    formData.append('start_date', currentWorkspace.value.schedule.startDate);
+
+                    // បញ្ជូន list នៃម៉ោងផុសទាំងអស់ដែលបានកំណត់
+                    formData.append('morning_times', JSON.stringify(currentWorkspace.value.schedule.morningTimes));
+                    formData.append('noon_times', JSON.stringify(currentWorkspace.value.schedule.noonTimes));
+                    formData.append('night_times', JSON.stringify(currentWorkspace.value.schedule.nightTimes));
+                    formData.append('total_per_day', totalVideosPerDay.value);
+
+                    formData.append('auto_delete', currentWorkspace.value.schedule.autoDelete);
+                    formData.append('caption', currentWorkspace.value.captionTemplate);
+
+                    currentWorkspace.value.videos.forEach(v => {
+                        formData.append('videos', v);
+                    });
+
+                    try {
+                        const res = await axios.post('http://127.0.0.1:8000/api/bulk-upload', formData);
+                        alert(res.data.message);
+                        currentAccount.value = null;
+                    } catch (err) {
+                        alert('ការ Upload បរាជ័យ!');
+                    } finally {
+                        isUploading.value = false;
+                    }
+                };
+
+                return {
+                    showSync,
+                    openAddModal,
+                    fbAdminToken,
+                    isUploading,
+                    searchQuery,
+                    newAccount,
+                    selectedPlatform,
+                    currentAccount,
+                    currentLevel,
+                    accounts,
+                    workspaces,
+                    currentWorkspace,
+                    currentPlatformAccounts,
+                    filteredAccounts,
+                    totalVideosPerDay,
+                    updateSlotCount,
+                    getAccountCount,
+                    getPlatformTitle,
+                    selectPlatform,
+                    selectAccount,
+                    switchAccount,
+                    goBack,
+                    resetToHome,
+                    addNewAccount,
+                    onVideoFilesSelected,
+                    removeCurrentVideo,
+                    clearCurrentVideos,
+                    onThumbnailSelected,
+                    removeCurrentThumbnail,
+                    syncPages,
+                    saveAndStartQueue
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
